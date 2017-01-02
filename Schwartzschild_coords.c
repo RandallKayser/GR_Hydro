@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "geometry.h"
 #include <math.h>
 
@@ -5,11 +6,12 @@ double mass = 1;
 double eps = 1e-6;
 double r_min = 2. * mass + eps;
 double r_max;
+
 // Standard Swartzschild coordinates, {t, r, theta, phi}
 // logarithmic cells in r
 // delta_theta, delta_phi constant 
 
-double schwartzschild(int dir1, int dir2, double position[4]) {
+double schwarzschild(int dir1, int dir2, double position[4]) {
 	if(dir1 != dir2) {
 		return 0;
 	} else if(dir1 == 0) {
@@ -45,11 +47,42 @@ double dx_i(int dir, int cell[DIM_NUM-1]) {
 		cell[0] += 1;
 		return (xp1 - xm1) / 2.;
 	} else if(dir == 2) {
-		return 2 * M_PI / x2cellnum;
+		return 2 * M_PI / x2cellnum * get_position(1, cell) * sin(get_position(3, cell));
 	} else if(dir == 3) {
-		return M_PI / x3cellnum;
+		return M_PI / x3cellnum * get_position(1, cell);
 	}
 }
+
+double calculate_dx_min() {
+	dx_min = 1e30;
+	double cell[DIM_NUM-1];
+	double dx_temp;
+	for(int i = 0; i < x1cellnum; i++) {
+		for(int j = 0; j < x2cellnum; j++) {
+			for(int k = 0; k < x3cellnum; k++) {
+				cell[0] = i;
+				cell[1] = j;
+				cell[2] = k;
+
+				for(dir = 1; dir < DIM_NUM; dir++) {
+					dx_temp = dx_i(dir, cell);
+
+					if(dx_temp < dx_min) {
+						dx_min = dx_temp
+					}
+
+				} 
+			}
+		}
+	}
+
+	return dx_min;
+}
+
+
+const static double dx_min = calculate_dx_min();
+
+
 double metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 	double position[4];
 
@@ -58,7 +91,7 @@ double metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 	position[2] = get_position(2, cell);
 	position[3] = get_position(3, cell);
 
-	return schwartzschild(dir1, dir2, position);
+	return schwarzschild(dir1, dir2, position);
 }
 
 
@@ -84,6 +117,15 @@ double metric_det(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 
 double metric_space(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 	return metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]);
+}
+
+
+double inverse_metric_space(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
+	if(dir1 != dir2) {
+		return 0.;
+	} else {
+		return pow(schwarzschild(dir1, dir2, x0, cell), -1.);
+	}
 }
 
 
@@ -129,3 +171,7 @@ double volume(double x0, int cell[DIM_NUM-1]) {
 
 	return volume;
 }
+
+
+
+
