@@ -2,11 +2,6 @@
 #include "geometry.h"
 #include <math.h>
 
-double mass = 1;
-double eps = 1e-6;
-double r_min = 2. * mass + eps;
-double r_max;
-
 // Standard Swartzschild coordinates, {t, r, theta, phi}
 // logarithmic cells in r
 // delta_theta, delta_phi constant 
@@ -25,6 +20,7 @@ double schwarzschild(int dir1, int dir2, double position[4]) {
 	}
 }
 
+
 double get_position(int dir, int cell[DIM_NUM-1]) {
 	if(dir == 1) {
 		return r_min * pow(r_max / r_min, cell[0] / x1cellnum);
@@ -34,6 +30,7 @@ double get_position(int dir, int cell[DIM_NUM-1]) {
 		return M_PI * cell[2] / x3cellnum;
 	} 
 }
+
 
 double dx_i(int dir, int cell[DIM_NUM-1]) {
 	if(dir == 1) {
@@ -53,6 +50,7 @@ double dx_i(int dir, int cell[DIM_NUM-1]) {
 	}
 }
 
+
 double calculate_dx_min() {
 	dx_min = 1e30;
 	double cell[DIM_NUM-1];
@@ -68,7 +66,7 @@ double calculate_dx_min() {
 					dx_temp = dx_i(dir, cell);
 
 					if(dx_temp < dx_min) {
-						dx_min = dx_temp
+						dx_min = dx_temp;
 					}
 
 				} 
@@ -80,9 +78,6 @@ double calculate_dx_min() {
 }
 
 
-const static double dx_min = calculate_dx_min();
-
-
 double metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 	double position[4];
 
@@ -92,6 +87,88 @@ double metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 	position[3] = get_position(3, cell);
 
 	return schwarzschild(dir1, dir2, position);
+}
+
+
+double metric_derivative(int dir1, int dir2, int dir3, double x0, int cell[DIM_NUM-1]){
+	double r = get_position(1, cell);
+	double theta = get_position(2, cell);
+
+	if(dir3 == 0 || dir3 == 3) {
+		return 0.;
+	} else if(dir1 != dir2) {
+		return 0.;
+	} else if(dir1 == 0 && dir3 == 1) {
+		return - 2. * mass / pow(r, 2.);
+	} else if(dir1 == 0 && dir3 == 2) {
+		return 0.;
+	} else if(dir1 == 1 && dir3 == 1) {
+		return 2 * mass / pow(r - 2 * mass, 2.);
+	} else if(dir1 == 1 && dir3 == 2) {
+		return 0.;
+	} else if(dir1 == 2 && dir3 == 1) {
+		return 2 * r;
+	} else if(dir1 == 2 && dir3 == 2) {
+		return 0;
+	} else if(dir1 == 3 && dir3 == 1) {
+		return 2 * r * pow(sin(theta), 2.);
+	} else if(dir1 == 3 && dir3 == 2) {
+		return pow(r, 2.) * 2 * sin(theta) * cos(theta);
+	}
+}
+
+
+double christoffel_symbol(int dir1, int dir2, int dir3, double x0, int cell[DIM_NUM-1]) {
+	// dir1 as top index
+	double r = get_postition(1, cell);
+	double theta = get_position(2, cell);
+
+	if(dir2 < dir3) {
+		int temp = dir3;
+		dir3 = dir2;
+		dir2 = temp;
+	}
+
+	if(dir1 == 0) {
+		if(dir2 == 1 && dir3 == 0) {
+			return mass / (pow(r, 2.) - 2. * mass * r);
+		}
+	} else if(dir1 == 1) {
+		if(dir2 == dir3) {
+			if(dir2 == 0) {
+				return mass / pow(r, 2.) * (1. - 2. * mass / r);
+			} else if(dir2 == 1) {
+				return mass / (pow(r, 2.) * (1. - 2. * mass / r));
+			} else if(dir2 == 2) {
+				return -r * (1. - 2. * mass / r);
+			} else if(dir2 == 3) {
+				return -r * pow(sin(theta), 2.) * (1. - 2. * mass / r);
+			}
+		}
+	} else if(dir1 == 2) {
+		if(dir2 == 2 && dir3 == 1) {
+			return pow(r, -1.);
+		} else if(dir2 == 3 && dir3 == 3) {
+			return -sin(theta) * cos(theta);
+		}
+	} else if(dir1 == 3) {
+		if(dir2 == 3 && dir3 == 1) {
+			return pow(r, -1.);
+		} else if(dir2 == 3 && dir3 == 2) {
+			return cos(theta) / sin(theta);
+		}
+	}
+
+	return 0.;
+}
+
+
+double inverse_metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
+	if(dir1 != dir2) {
+		return 0.;
+	} else {
+		return pow(schwarzschild(dir1, dir2, x0, cell), -1.);
+	}
 }
 
 
@@ -131,6 +208,15 @@ double inverse_metric_space(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) 
 
 double lapse(double x0, int cell[DIM_NUM-1]) {
 	return pow(-metric_full(0, 0, x0, cell[DIM_NUM-1]), .5);
+}
+
+
+double log_lapse_derivative(int dir, double x0, int cell[DIM_NUM-1]) {
+	if(dir = 1) {
+		return mass * pow(lapse(x0, cell) * get_position(1, cell), 2.);
+	} else {
+		return 0.;
+	}
 }
 
 
