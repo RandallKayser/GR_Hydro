@@ -1,7 +1,8 @@
 #include "timestep.h"
+#include "update.h"
+#include "misc.h"
 
-void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double *Ustate_temp, 
-	double dt, void (*subroutine)(double*, double*, double* double, double[DIM_NUM-1])) {
+void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double dt) {
 	
 	int cell[DIM_NUM-1];
 	
@@ -13,9 +14,7 @@ void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double *Ustate_temp,
 				cell[2] = k;
 				
 				for(int comp = 0; comp < DIM_NUM + 1; comp++) {
-					*(Ustate_temp + U_offset(cell, comp)) = *(Ustate_ptr + U_offset(cell, comp)) + 
-						dt * (*subroutine)(Ustate_ptr, Pstate_ptr, Ustate_temp, dt, cell);
-					/* subroutines: add_fluxes, add_sources, */
+					*(Ustate_ptr + U_offset(cell, comp)) = *(Ustate_ptr + U_offset(cell, comp)) + 1;
 				}
 			}
 		}
