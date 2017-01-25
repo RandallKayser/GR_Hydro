@@ -28,11 +28,11 @@ double schwarzschild(int dir1, int dir2, double position[4]) {
 
 double get_position(int dir, double x0, int cell[DIM_NUM-1]) {
 	if(dir == 1) {
-		return r_min * pow(r_max / r_min, cell[0] / x1cellnum);
+		return r_min * pow(r_max / r_min, (double) cell[0] / x1cellnum);
 	} else if(dir == 2) {
-		return 2 * M_PI * cell[1] / x2cellnum;
+		return M_PI * cell[1] / x2cellnum;
 	} else if(dir == 3) {
-		return M_PI * cell[2] / x3cellnum;
+		return 2 * M_PI * cell[2] / x3cellnum;
 	} else {
 		printf("\n\n\nget_position_index_error\n\n\n");
 		return 0.;
@@ -52,7 +52,7 @@ double dx_i(int dir, double x0, int cell[DIM_NUM-1]) {
 		cell[0] += 1;
 		return (xp1 - xm1) / 2.;
 	} else if(dir == 2) {
-		return 2 * M_PI / x2cellnum * get_position(1, x0, cell) * sin(get_position(3, x0, cell));
+		return 2 * M_PI / x2cellnum * get_position(1, x0, cell) * sin(get_position(2, x0, cell));
 	} else if(dir == 3) {
 		return M_PI / x3cellnum * get_position(1, x0, cell);
 	} else {
@@ -66,14 +66,19 @@ double calculate_dx_min(double x0) {
 	double dx_min = 1e30;
 	int cell[DIM_NUM-1];
 	double dx_temp;
-	for(int i = 0; i < x1cellnum; i++) {
-		for(int j = 0; j < x2cellnum; j++) {
-			for(int k = 0; k < x3cellnum; k++) {
+	for(int i = 1; i < x1cellnum - 1; i++) {
+		for(int j = 1; j < x2cellnum - 1; j++) {
+			for(int k = 1; k < x3cellnum - 1; k++) {
 				cell[0] = i;
 				cell[1] = j;
 				cell[2] = k;
 
+
+
 				for(int dir = 1; dir < DIM_NUM; dir++) {
+					if(dx_i(dir, x0, cell) == 0.) {
+						printf("ERROR AT %i %i %i\n", cell[0], cell[1], cell[2]);
+					}
 					dx_temp = dx_i(dir, x0, cell);
 
 					if(dx_temp < dx_min) {
@@ -101,7 +106,7 @@ double metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 }
 
 
-double metric_derivative(int dir1, int dir2, int dir3, double x0, int cell[DIM_NUM-1]){
+double metric_derivative(int dir1, int dir2, int dir3, double x0, int cell[DIM_NUM-1]) {
 	double r = get_position(1, x0, cell);
 	double theta = get_position(2, x0, cell);
 
@@ -125,6 +130,9 @@ double metric_derivative(int dir1, int dir2, int dir3, double x0, int cell[DIM_N
 		return 2 * r * pow(sin(theta), 2.);
 	} else if(dir1 == 3 && dir3 == 2) {
 		return pow(r, 2.) * 2 * sin(theta) * cos(theta);
+	} else {
+		printf("\n\n Error in metric_derivative\n\n");
+		return 0.;
 	}
 }
 
@@ -274,7 +282,3 @@ double volume(double x0, int cell[DIM_NUM-1]) {
 
 	return volume;
 }
-
-
-
-

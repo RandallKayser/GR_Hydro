@@ -7,8 +7,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+double t_now = t_init;
 double h(double *Pstate_local, double x0, int cell[DIM_NUM-1]) {
-	return 1. + gamma_const / (gamma_const - 1.) * *(Pstate_local + 1) / *Pstate_local;
+	return 1. + gamma_const / (gamma_const - 1.) * Pstate_local[1] / Pstate_local[0];
 }
 
 
@@ -30,12 +31,12 @@ double v_i(double *Pstate_local, int index, double x0, int cell[DIM_NUM-1]) {
 
 
 double W(double *Pstate_local, double x0, int cell[DIM_NUM-1]) {
-	return lapse(x0, cell) * *(Pstate_local + 2); 
+	return lapse(x0, cell) * Pstate_local[2]; 
 }
 
 
 double D(double *Pstate_local, double x0, int cell[DIM_NUM-1]) {
-	return *Pstate_local * W(Pstate_local, x0, cell);
+	return Pstate_local[0] * W(Pstate_local, x0, cell);
 }
 
 
@@ -180,7 +181,7 @@ double dx_min = 0.;
 
 double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 	int cell[DIM_NUM-1];
-	double c_max = 0;
+	double c_max = 0.;
 	double temp_plus;
 	double temp_minus;
 	if(dxmin == 0.) {
@@ -210,7 +211,7 @@ double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 			}
 		}
 	}
-
+	printf("c_max = %f", c_max);
 	return cfl_number * dxmin / c_max;
 }
 
@@ -363,6 +364,8 @@ double* sources(double *Pstate_ptr, double x0, int cell[DIM_NUM-1]) {
 	}
 
 	source_return[4] = lapse(x0, cell) * (Tsum1 - Tsum2);
+
+	return source_return;
 }
 
 
@@ -380,8 +383,10 @@ double* piecewise_constant(double *Pstate_ptr, int right_bias, int dir, double x
 
 void update(double *Ustate_ptr, double *Pstate_ptr, double x0) {
 	double dt = get_dt_max(Pstate_ptr, x0, dx_min);
-	timestep_basic(Ustate_ptr, Pstate_ptr, dt);
+	timestep_basic(Ustate_ptr, Pstate_ptr, dt, x0);
+	printf("%.15f\n", x0);
 	x0 += dt;
+
 }
 
 

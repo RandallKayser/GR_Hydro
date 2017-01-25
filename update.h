@@ -12,6 +12,7 @@ void prim_to_cons(double *Ustate_ptr, double *Pstate_ptr, double x0);
 
 double get_signals(double *Pstate_ptr, int plus, int dir, double x0, int cell[DIM_NUM-1]);
 double get_dt_max(double *Pstate_ptr, double x0, double dxmin);
+double* build_F_i(double *Pstate_local, int dir, double x0, int cell[DIM_NUM-1]);
 double* fluxes(double *Pstate_ptr, double x0, int cell[DIM_NUM-1]);
 double* sources(double *Pstate_ptr, double x0, int cell[DIM_NUM-1]);
 double* rhlle(double *Pstate_ptr, int dir, double x0, int cell[DIM_NUM-1]);
