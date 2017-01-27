@@ -1,6 +1,6 @@
-#include "timestep.h"
-#include "update.h"
-#include "misc.h"
+#include "../headers/timestep.h"
+#include "../headers/update.h"
+#include "../headers/misc.h"
 
 void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double dt, double x0) {
 	
@@ -8,9 +8,9 @@ void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double dt, double x0
 	double *flux_vect;
 	double *source_vect;
 
-	for(int i = 0; i < x1cellnum; i++) {
-		for(int j = 0; j < x2cellnum; j++) {
-			for(int k = 0; k < x3cellnum; k++) {
+	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
 				cell[0] = i;
 				cell[1] = j;
 				cell[2] = k;
@@ -24,5 +24,3 @@ void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double dt, double x0
 		}
 	}
 }
-
-

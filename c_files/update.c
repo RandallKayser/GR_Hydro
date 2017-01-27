@@ -1,9 +1,9 @@
 #include <math.h>
-#include "constants.h"
-#include "misc.h"
-#include "geometry.h"
-#include "timestep.h"
-#include "update.h"
+#include "../headers/constants.h"
+#include "../headers/misc.h"
+#include "../headers/geometry.h"
+#include "../headers/timestep.h"
+#include "../headers/update.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -83,9 +83,9 @@ void prim_to_cons(double *Ustate_ptr, double *Pstate_ptr, double x0) {
 	int cell[DIM_NUM-1];
 	double Pstate_local[DIM_NUM+2];
 
-	for(int i = 0; i < x1cellnum; i++) {
-		for(int j = 0; j < x2cellnum; j++) {
-			for(int k = 0; k < x3cellnum; k++) {
+	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
 				cell[0] = i;
 				cell[1] = j;
 				cell[2] = k;
@@ -151,30 +151,33 @@ double get_signals(double* Pstate_ptr, int plus, int dir, double x0, int cell[DI
 	double ap1 = lapse(x0, cell);
 
 	cell[dir-1] -= 1;
+// FIX THIS
 
-	double vbar = (v[dir-1] + vp1[dir-1]) / 2.;
-	double cbar = (c + cp1) / 2.;
-	double vnormsqbar = (vnormsq + vnormsqp1) / 2.;
-	double giibar = (gii + giip1) / 2.;
-	double abar = (a + ap1) / 2.;
+	double part = c * sqrt((1. - vnormsq) * (gii * (1. - vnormsq * pow(c, 2.)) - 
+		pow(v, 2.) * (1. - pow(c, 2.))));
 
-	double part = cbar * sqrt((1. - vnormsqbar) * (giibar * (1. - vnormsqbar * pow(cbar, 2.)) - 
-		pow(vbar, 2.) * (1. - pow(cbar, 2.))));
+	double partp1 = cp1 * sqrt((1. - vnormsqp1) * (giip1 * (1. - vnormsqp1 * pow(cp1, 2.)) - 
+		pow(vp1, 2.) * (1. - pow(cp1, 2.))));
+	
 	double *shiftvect;
 	shiftvect = shift(x0, cell);
 
 	double full;
 	
 	if(plus) {
-		full = abar / (1. - vnormsqbar * pow(cbar, 2.0)) * (vbar * (1. - pow(cbar, 2.0)) + part) - shiftvect[dir-1];
+		full = a / (1. - vnormsq * pow(c, 2.0)) * (v * (1. - pow(c, 2.0)) + part) - shiftvect[dir-1];
 	} else {
-		full = abar / (1. - vnormsqbar * pow(cbar, 2.0)) * (vbar * (1. - pow(cbar, 2.0)) - part) - shiftvect[dir-1];
+		fullp1 = ap1 / (1. - vnormsqp1 * pow(cp1, 2.0)) * (vp1 * (1. - pow(cp1, 2.0)) - partp1) - shiftvect[dir-1];
 	}
 	free(Pstate_left);
 	free(Pstate_right);
 	free(shiftvect);
 
-	return full;
+	if(fabs(full) > fabs(fullp1)) {
+		return full;
+	} else {
+		return fullp1;
+	}
 }
 
 double dx_min = 0.;
@@ -188,9 +191,9 @@ double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 		dxmin = calculate_dx_min(t_init);
 	}
 
-	for(int i = 0; i < x1cellnum; i++) {
-		for(int j = 0; j < x2cellnum; j++) {
-			for(int k = 0; k < x3cellnum; k++) {
+	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
 				cell[0] = i;
 				cell[1] = j;
 				cell[2] = k;
@@ -198,7 +201,10 @@ double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 				for(int dir = 1; dir < DIM_NUM; dir++) {
 					temp_plus = fabs(get_signals(Pstate_ptr, 1, dir, x0, cell));
 					temp_minus = fabs(get_signals(Pstate_ptr, 0, dir, x0, cell));
-
+					printf("temp_plus = %f, temp_minus = %f\n", temp_plus, temp_minus);
+					if(isnan(temp_plus) || isnan(temp_minus)) {
+						printf("%i, %i, %i\n", cell[0], cell[1], cell[2]);
+					}
 					if(temp_plus > c_max) {
 						c_max = temp_plus;
 					}
@@ -211,6 +217,8 @@ double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 			}
 		}
 	}
+
+	// FIX THIS TRY HARMONIC MEAN
 	printf("c_max = %f", c_max);
 	return cfl_number * dxmin / c_max;
 }

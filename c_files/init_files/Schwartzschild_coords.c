@@ -1,5 +1,5 @@
-#include "constants.h"
-#include "geometry.h"
+#include "headers/constants.h"
+#include "headers/geometry.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -192,7 +192,7 @@ double inverse_metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
 
 
 double inner_product(double a[DIM_NUM], double b[DIM_NUM], double x0, int cell[DIM_NUM-1]) {
-
+	// takes 2 contravariant vectors
 	double sum = 0.;
 
 	for(int dir = 0; dir < DIM_NUM; dir++) {

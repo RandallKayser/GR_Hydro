@@ -1,6 +1,6 @@
-#include "initfuncs.h"
-#include "misc.h"
-#include "geometry.h"
+#include "headers/initfuncs.h"
+#include "headers/misc.h"
+#include "headers/geometry.h"
 #include <math.h>
 
 double rho_0(int cell[DIM_NUM-1]) {

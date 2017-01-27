@@ -1,22 +1,22 @@
-#include "constants.h"
-#include "initfuncs.h"
-#include "misc.h"
-#include "geometry.h"
-#include "timestep.h"
-#include "update.h"
+#include "../headers/constants.h"
+#include "../headers/initfuncs.h"
+#include "../headers/misc.h"
+#include "../headers/geometry.h"
+#include "../headers/timestep.h"
+#include "../headers/update.h"
 #include <stdlib.h>
 #include <stdio.h>
 
 int main(void) {
 	double t_now = t_init;
-	U_ptr = malloc(sizeof(double) * 5 * x0cellnum * x1cellnum * x2cellnum * x3cellnum);
-	P_ptr = malloc(sizeof(double) * 6 * x0cellnum * x1cellnum * x2cellnum * x3cellnum);
+	U_ptr = malloc(sizeof(double) * 5 * (2 * ghost_num + x1cellnum) * (2 * ghost_num + x2cellnum) * (2 * ghost_num + x3cellnum));
+	P_ptr = malloc(sizeof(double) * 6 * (2 * ghost_num + x1cellnum) * (2 * ghost_num + x2cellnum) * (2 * ghost_num + x3cellnum));
 
 	Pinit(P_ptr);
 	printf("dxmin = %f\n", calculate_dx_min(t_init));
 	while(t_now < t_final) {
 		update(U_ptr, P_ptr, t_now);
-		printf("%f\n", t_now);
+		printf("time elapsed = %f\n", t_now);
 	}
 /* above, keep
 ------------------------------------------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ int main(void) {
 	flux_test = fluxes(P_ptr, t_init, cell);
 	source_test = sources(P_ptr, t_init, cell);
 
-	printf("%f %f %f %f \n", get_position(1, t_init, cell), get_position(2, t_init, cell), get_position(3, t_init, cell));
+	printf("%f %f %f \n", get_position(1, t_init, cell), get_position(2, t_init, cell), get_position(3, t_init, cell));
 	printf("%f %f %f \n", dx_i(1, t_init, cell), dx_i(2, t_init, cell), dx_i(3, t_init, cell));
 	printf("%f %f %f %f %f\n", rhlle_test[0], rhlle_test[1], rhlle_test[2], rhlle_test[3], rhlle_test[4]);
 	printf("%f %f %f %f %f\n", flux_test[0], flux_test[1], flux_test[2], flux_test[3], flux_test[4]);
