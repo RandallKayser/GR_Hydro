@@ -36,9 +36,9 @@ double u3_0(int cell[DIM_NUM-1]) {
 void Pinit(double *Pstate_ptr) {
 	int cell[DIM_NUM-1];
 	double *Pstate_local;
-	for(int i = 0; i < x1cellnum; i++) {
-		for(int j = 0; j < x2cellnum; j++) {
-			for(int k = 0; k < x3cellnum; k++) {
+	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
 				cell[0] = i;
 				cell[1] = j;
 				cell[2] = k;

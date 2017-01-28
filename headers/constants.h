@@ -1,7 +1,6 @@
 #ifndef INCLUDE_CONSTANTS
 #define INCLUDE_CONSTANTS 1
 
-const static int x0cellnum = 512;
 const static int x1cellnum = 16;
 const static int x2cellnum = 16;
 const static int x3cellnum = 16;

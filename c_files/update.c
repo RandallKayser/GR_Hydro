@@ -430,7 +430,7 @@ void pressureeq(double pbar, double *Ustate_ptr, double result[2], double x0, in
 }
 
 
-void psolve(double *Ustate_ptr, double *Pstate_ptr, double x0, int cell[DIM_NUM-1]) {
+double psolve(double *Ustate_ptr, double *Pstate_ptr, double x0, int cell[DIM_NUM-1]) {
 	double *Pstate_local;
 	Pstate_local = Pstate_ptr + P_offset(cell, 0);
 	int iterations = 0;
@@ -440,7 +440,7 @@ void psolve(double *Ustate_ptr, double *Pstate_ptr, double x0, int cell[DIM_NUM-
 	double pfunc[2];
 
 
-	while(error >= tolerance && iterations < 100) {
+	while(error >= tolerance) {
 		pressureeq(p, Ustate_ptr, pfunc, x0, cell);
 		error = fabs(pfunc[0] / pfunc[1]);
 		p -= pfunc[0] / pfunc[1];
@@ -451,28 +451,64 @@ void psolve(double *Ustate_ptr, double *Pstate_ptr, double x0, int cell[DIM_NUM-
 		}
 	}
 
+	return p;
 }
 
 
+void cons_to_prim(double *Ustate_ptr, double *Pstate_ptr, x0) {
+	int cell[DIM_NUM-1];
+	double *Ustate_local;
+	double D, tau, p, W, v_sum, u0;
+	double v_i[3];
+	double v_i_upper[3];
+	double *shift_vect;
+	
+	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
+			for(int k = ghost_num; k < x1cellnum + ghost_num; k++) {
+				cell[0] = i;
+				cell[1] = j;
+				cell[2] = k;
 
+				v_i_upper[0] = 0.;
+				v_i_upper[1] = 0.;
+				v_i_upper[2] = 0.;
+				v_sum = 0.;
+			
+				Ustate_local = Ustate_ptr + U_offset(cell, 0);
 
+				p = psolve(Ustate_ptr, Pstate_ptr, x0, cell);
+				D = Ustate_local[0];
+				tau = Ustate_local[1];
 
+				for(int i = 1; i < 4; i++) {
+					v_i[i-1] = Ustate_local[i] / (tau + D + p);
+				}
+				
+				for(int i = 1; i < 4; i++) {
+					v_upper_i[i-1] = 0.;
+					for(int j = 1; j < 4; j++){
+						v_upper_i[i-1] += inverse_metric_full(i, j, x0, cell) * v_i[j-1];
+					}
+					v_sum += v_i[i-1] * v_upper_i[i-1];
+				}
 
+				W = pow(1. - v_sum, -.5);
+				u0 = W / lapse(x0, cell);
+				shift_vect = shift(x0, cell);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+				*(Pstate_ptr + P_offset(cell, 0)) = D / W;
+				*(Pstate_ptr + P_offset(cell, 1)) = p;
+				*(Pstate_ptr + P_offset(cell, 2)) = u0;
+				*(Pstate_ptr + P_offset(cell, 3)) = u0 * (lapse(x0, cell) * v_i_upper[0] - shift_vect[0]);
+				*(Pstate_ptr + P_offset(cell, 4)) = u0 * (lapse(x0, cell) * v_i_upper[1] - shift_vect[1]);
+				*(Pstate_ptr + P_offset(cell, 5)) = u0 * (lapse(x0, cell) * v_i_upper[2] - shift_vect[2]);
+				
+				free(shift_vect);
+			}		
+		}		
+	}
+}
 
 
 

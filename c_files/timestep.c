@@ -20,6 +20,11 @@ void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double dt, double x0
 				for(int comp = 0; comp < DIM_NUM + 1; comp++) {
 					*(Ustate_ptr + U_offset(cell, comp)) += dt * (flux_vect[comp] + source_vect[comp]);
 				}
+
+				enforce_bc();
+
+				free(flux_vect);
+				free(source_vect);
 			}
 		}
 	}

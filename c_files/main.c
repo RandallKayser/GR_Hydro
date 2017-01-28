@@ -13,15 +13,20 @@ int main(void) {
 	P_ptr = malloc(sizeof(double) * 6 * (2 * ghost_num + x1cellnum) * (2 * ghost_num + x2cellnum) * (2 * ghost_num + x3cellnum));
 
 	Pinit(P_ptr);
+
 	printf("dxmin = %f\n", calculate_dx_min(t_init));
 	while(t_now < t_final) {
+		prim_to_cons(U_ptr, P_ptr, t_now);
+		enforce_bc(U_ptr);
 		update(U_ptr, P_ptr, t_now);
+		cons_to_prim(U_ptr, P_ptr, t_now);
+
 		printf("time elapsed = %f\n", t_now);
 	}
 /* above, keep
 ------------------------------------------------------------------------------------------------------------------
    below, test funcs */
-	int cell[3];
+/*	int cell[3];
 	
 	cell[0] = 14;
 	cell[1] = 5;
@@ -42,4 +47,4 @@ int main(void) {
 	printf("%f %f %f %f %f\n", source_test[0], source_test[1], source_test[2], source_test[3], source_test[4]);
 
 	return 0;
-}
+} */
