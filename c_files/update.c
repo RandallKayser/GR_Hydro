@@ -81,17 +81,17 @@ double* prim_to_cons_local(double *Pstate_local, double x0, int cell[DIM_NUM-1])
 void prim_to_cons(double *Ustate_ptr, double *Pstate_ptr, double x0) {
 
 	int cell[DIM_NUM-1];
-	double Pstate_local[DIM_NUM+2];
+	double *Pstate_local;
 
 	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		cell[0] = i;
 		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			cell[1] = j;
 			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
-				cell[0] = i;
-				cell[1] = j;
 				cell[2] = k;
-				for(int comp = 0; comp < DIM_NUM+2; comp++) {
-					Pstate_local[comp] = *(Pstate_ptr + P_offset(cell, comp));
-				}
+				
+				Pstate_local = Pstate_ptr + P_offset(cell, 0);
+				
 				// define prim as P_ptr + P_offest(cell, 0)
 				*(Ustate_ptr + U_offset(cell, 0)) = D(Pstate_local, x0, cell);
 				*(Ustate_ptr + U_offset(cell, 1)) = E(Pstate_local, x0, cell) - *(Ustate_ptr + U_offset(cell, 0));
@@ -120,12 +120,12 @@ double get_signals(double* Pstate_ptr, int plus, int dir, double x0, int cell[DI
 	Pstate_left = (*interpolation_method)(Pstate_ptr, right_bias, dir, x0, cell);
 
 	double v[DIM_NUM-1];
-	for(int i = 1; i < DIM_NUM-1; i++) {
+	for(int i = 1; i < DIM_NUM; i++) {
 		v[i-1] = v_i(Pstate_left, i, x0, cell);
 	}
 	double vnormsq = inner_product_space(v, v, x0, cell);
-	double p = *(Pstate_left + 1);
-	double rho = *Pstate_left;
+	double p = Pstate_left[1];
+	double rho = Pstate_left[0];
 	double h_here = h(Pstate_left, x0, cell);
 	double c = sqrt(gamma_const * p / (rho * h_here));
 	double gii = inverse_metric_space(dir, dir, x0, cell);
@@ -139,8 +139,8 @@ double get_signals(double* Pstate_ptr, int plus, int dir, double x0, int cell[DI
 	Pstate_right = (*interpolation_method)(Pstate_ptr, right_bias, dir, x0, cell);
 
 	double vp1[DIM_NUM-1];
-	for(int i = 1; i < DIM_NUM-1; i++) {
-		vp1[i-1] = v_i(Pstate_ptr, i, x0, cell);
+	for(int i = 1; i < DIM_NUM; i++) {
+		vp1[i-1] = v_i(Pstate_right, i, x0, cell);
 	}
 	double vnormsqp1 = inner_product_space(vp1, vp1, x0, cell);
 	double pp1 = Pstate_right[1];
@@ -151,23 +151,24 @@ double get_signals(double* Pstate_ptr, int plus, int dir, double x0, int cell[DI
 	double ap1 = lapse(x0, cell);
 
 	cell[dir-1] -= 1;
-// FIX THIS
 
 	double part = c * sqrt((1. - vnormsq) * (gii * (1. - vnormsq * pow(c, 2.)) - 
-		pow(v, 2.) * (1. - pow(c, 2.))));
+		pow(v[dir-1], 2.) * (1. - pow(c, 2.))));
 
 	double partp1 = cp1 * sqrt((1. - vnormsqp1) * (giip1 * (1. - vnormsqp1 * pow(cp1, 2.)) - 
-		pow(vp1, 2.) * (1. - pow(cp1, 2.))));
-	
+		pow(vp1[dir-1], 2.) * (1. - pow(cp1, 2.))));
+
 	double *shiftvect;
 	shiftvect = shift(x0, cell);
 
-	double full;
+	double full, fullp1;
 	
 	if(plus) {
-		full = a / (1. - vnormsq * pow(c, 2.0)) * (v * (1. - pow(c, 2.0)) + part) - shiftvect[dir-1];
+		full = a / (1. - vnormsq * pow(c, 2.0)) * (v[dir-1] * (1. - pow(c, 2.0)) + part) - shiftvect[dir-1];
+		fullp1 = ap1 / (1. - vnormsqp1 * pow(cp1, 2.0)) * (vp1[dir-1] * (1. - pow(cp1, 2.0)) + partp1) - shiftvect[dir-1];
 	} else {
-		fullp1 = ap1 / (1. - vnormsqp1 * pow(cp1, 2.0)) * (vp1 * (1. - pow(cp1, 2.0)) - partp1) - shiftvect[dir-1];
+		full = a / (1. - vnormsq * pow(c, 2.0)) * (v[dir-1] * (1. - pow(c, 2.0)) - part) - shiftvect[dir-1];
+		fullp1 = ap1 / (1. - vnormsqp1 * pow(cp1, 2.0)) * (vp1[dir-1] * (1. - pow(cp1, 2.0)) - partp1) - shiftvect[dir-1];
 	}
 	free(Pstate_left);
 	free(Pstate_right);
@@ -180,7 +181,9 @@ double get_signals(double* Pstate_ptr, int plus, int dir, double x0, int cell[DI
 	}
 }
 
+
 double dx_min = 0.;
+
 
 double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 	int cell[DIM_NUM-1];
@@ -192,19 +195,16 @@ double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 	}
 
 	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		cell[0] = i;
 		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			cell[1] = j;
 			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
-				cell[0] = i;
-				cell[1] = j;
 				cell[2] = k;
 
 				for(int dir = 1; dir < DIM_NUM; dir++) {
 					temp_plus = fabs(get_signals(Pstate_ptr, 1, dir, x0, cell));
 					temp_minus = fabs(get_signals(Pstate_ptr, 0, dir, x0, cell));
-					printf("temp_plus = %f, temp_minus = %f\n", temp_plus, temp_minus);
-					if(isnan(temp_plus) || isnan(temp_minus)) {
-						printf("%i, %i, %i\n", cell[0], cell[1], cell[2]);
-					}
+
 					if(temp_plus > c_max) {
 						c_max = temp_plus;
 					}
@@ -219,7 +219,7 @@ double get_dt_max(double *Pstate_ptr, double x0, double dxmin) {
 	}
 
 	// FIX THIS TRY HARMONIC MEAN
-	printf("c_max = %f", c_max);
+
 	return cfl_number * dxmin / c_max;
 }
 
@@ -238,9 +238,9 @@ double* build_F_i(double *Pstate_local, int dir, double x0, int cell[DIM_NUM-1])
 	F_i_return[2] = S_k(Pstate_local, 2, x0, cell) * factor;
 	F_i_return[3] = S_k(Pstate_local, 3, x0, cell) * factor;
 	F_i_return[4] = (E(Pstate_local, x0, cell) - D(Pstate_local, x0, cell)) * 
-		factor + *(Pstate_local + 1) * v_i(Pstate_local, dir, x0, cell);
+		factor + Pstate_local[1] * v_i(Pstate_local, dir, x0, cell);
 
-	F_i_return[dir] += *(Pstate_local + 1);
+	F_i_return[dir] += Pstate_local[1];
 
 	free(beta);
 
@@ -268,11 +268,6 @@ double* rhlle(double *Pstate_ptr, int dir, double x0, int cell[DIM_NUM-1]) {
 	cell[dir-1] -= 1;
 	
 
-
-	// likely going to limit convergence -- metric not evaluated at edges inside get_signals()	
-
-
-
 	double *Uleft;
 	double *Uright;
 	double *Fleft;
@@ -298,6 +293,7 @@ double* rhlle(double *Pstate_ptr, int dir, double x0, int cell[DIM_NUM-1]) {
 	for(int comp = 0; comp < 5; comp++) {
 		Freturn[comp] = (alpha_plus * Fleft[comp] - alpha_minus * Fright[comp] - 
 			alpha_plus * alpha_minus * (Uleft[comp] - Uright[comp])) / (alpha_plus - alpha_minus);
+//---------------------------------------------------------------------------------------------------------------------------
 	}
 
 	free(Fleft);
@@ -380,8 +376,8 @@ double* sources(double *Pstate_ptr, double x0, int cell[DIM_NUM-1]) {
 
 double* piecewise_constant(double *Pstate_ptr, int right_bias, int dir, double x0, int cell[DIM_NUM-1]) {
 	double *Pstate_return;
-	Pstate_return = malloc(sizeof(double) * 5);
-	for(int comp = 0; comp < 5; comp++) {
+	Pstate_return = malloc(sizeof(double) * 6);
+	for(int comp = 0; comp < 6; comp++) {
 		Pstate_return[comp] = *(Pstate_ptr + P_offset(cell, comp));
 	}
 
@@ -389,12 +385,10 @@ double* piecewise_constant(double *Pstate_ptr, int right_bias, int dir, double x
 }
 
 
-void update(double *Ustate_ptr, double *Pstate_ptr, double x0) {
+double update(double *Ustate_ptr, double *Pstate_ptr, double x0) {
 	double dt = get_dt_max(Pstate_ptr, x0, dx_min);
 	timestep_basic(Ustate_ptr, Pstate_ptr, dt, x0);
-	printf("%.15f\n", x0);
-	x0 += dt;
-
+	return dt;
 }
 
 
@@ -409,7 +403,7 @@ void pressureeq(double pbar, double *Ustate_ptr, double result[2], double x0, in
 	double v_sum = 0.;
 	
 	for(int i = 1; i < 4; i++) {
-		v_i[i-1] = Ustate_local[i] / (tau + D + pbar);
+		v_i[i-1] = Ustate_local[i + 1] / (tau + D + pbar);
 	}
 
 	for(int i = 1; i < 4; i++) {
@@ -419,13 +413,13 @@ void pressureeq(double pbar, double *Ustate_ptr, double result[2], double x0, in
 		}
 		v_sum += v_i[i-1] * v_upper_i[i-1];
 	}
-
+//	printf("%i %i %i v_sum = %f, v_i_upper = %f, %f, %f\n", cell[0], cell[1], cell[2], v_sum, v_upper_i[0], v_upper_i[1], v_upper_i[2]);
 	double W = pow(1. - v_sum, -.5);
 	double rho = D / W;
-	double e = (tau + pbar + D * (1. - W) + pbar * (1. - pow(W, 2.))) / (D * W);
+	double e = (tau + D * (1. - W) + pbar * (1. - pow(W, 2.))) / (D * W);
 
 	result[0] = pbar - (gamma_const - 1.) * rho * e;
-	result[1] = v_sum * gamma_const * pbar / (rho + gamma_const * pbar / (gamma_const - 1.));
+	result[1] = v_sum * gamma_const * pbar / (rho + gamma_const * pbar / (gamma_const - 1.)) - 1.;
 
 }
 
@@ -434,7 +428,7 @@ double psolve(double *Ustate_ptr, double *Pstate_ptr, double x0, int cell[DIM_NU
 	double *Pstate_local;
 	Pstate_local = Pstate_ptr + P_offset(cell, 0);
 	int iterations = 0;
-	double tolerance = 1e-12;
+	double tolerance = 1e-9;
 	double error = 1.0;
 	double p = Pstate_local[1];
 	double pfunc[2];
@@ -455,7 +449,7 @@ double psolve(double *Ustate_ptr, double *Pstate_ptr, double x0, int cell[DIM_NU
 }
 
 
-void cons_to_prim(double *Ustate_ptr, double *Pstate_ptr, x0) {
+void cons_to_prim(double *Ustate_ptr, double *Pstate_ptr, double x0) {
 	int cell[DIM_NUM-1];
 	double *Ustate_local;
 	double D, tau, p, W, v_sum, u0;
@@ -464,10 +458,10 @@ void cons_to_prim(double *Ustate_ptr, double *Pstate_ptr, x0) {
 	double *shift_vect;
 	
 	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		cell[0] = i;
 		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
+			cell[1] = j;
 			for(int k = ghost_num; k < x1cellnum + ghost_num; k++) {
-				cell[0] = i;
-				cell[1] = j;
 				cell[2] = k;
 
 				v_i_upper[0] = 0.;
@@ -482,15 +476,15 @@ void cons_to_prim(double *Ustate_ptr, double *Pstate_ptr, x0) {
 				tau = Ustate_local[1];
 
 				for(int i = 1; i < 4; i++) {
-					v_i[i-1] = Ustate_local[i] / (tau + D + p);
+					v_i[i-1] = Ustate_local[i + 1] / (tau + D + p);
 				}
 				
 				for(int i = 1; i < 4; i++) {
-					v_upper_i[i-1] = 0.;
+					v_i_upper[i-1] = 0.;
 					for(int j = 1; j < 4; j++){
-						v_upper_i[i-1] += inverse_metric_full(i, j, x0, cell) * v_i[j-1];
+						v_i_upper[i-1] += inverse_metric_full(i, j, x0, cell) * v_i[j-1];
 					}
-					v_sum += v_i[i-1] * v_upper_i[i-1];
+					v_sum += v_i[i-1] * v_i_upper[i-1];
 				}
 
 				W = pow(1. - v_sum, -.5);

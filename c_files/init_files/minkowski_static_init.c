@@ -37,10 +37,10 @@ void Pinit(double *Pstate_ptr) {
 	int cell[DIM_NUM-1];
 	double *Pstate_local;
 	for(int i = ghost_num; i < x1cellnum + ghost_num; i++) {
+		cell[0] = i;
 		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			cell[1] = j;
 			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
-				cell[0] = i;
-				cell[1] = j;
 				cell[2] = k;
 
 				Pstate_local = Pstate_ptr + P_offset(cell, 0);
