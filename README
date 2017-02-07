@@ -1,5 +1,29 @@
-Pstate is the vector of primitives {rho, p, u^0, u^1, u^2, u^3}
-Ustate is the vector of conserved quantities {D, tau, S_1, S_2, S_3}
-	NOTE: u is the 4 velocity, S is a 3 vector
+Evolves Euler equations in a 3+1 dimensional space with a given metric in the test fluid regime, 
+according to the scheme due to Ibanez and Colleagues as outlined in:
+J. Font, Numerical Hydrodynamics and Magnetohydrodynamics in General Relativity. 
 
-coords {x0, x1, x2, x3} = {t, r, theta, phi}
+Currently debugging -- though constant states stay constant and not NaN.
+States with non-trivial time-evolution still have issues to be worked out.
+
+Written under the guidance of Andrew MacFadyen, NYU
+
+
+Program Structure:
+
+Pstate is the vector of primitives: {rho, p, u^0, u^1, u^2, u^3}
+Ustate is the vector of conserved quantities: {D, tau, S_1, S_2, S_3}
+
+Each timestep computes 
+1. Pstate array 
+2. Ustate array
+3. Enforces boundary conditions
+4. Updates Ustate variables with fluxes and sources
+5. reconstructs Pstate from Ustate via "safe" Newton-Raphson on the pressure 
+   (if Newton fails to return a pressure within a bracketing of the solution, use bisection)
+
+To be implemented, in order of importance:
+1. bug-fixes so that time-evolution properly obtained
+2. MUSCL type reconstruction, piecewise linear, piecewise parabolic
+3. high order Runge-Kutta time schemes
+4. more boundary conditions
+5. general optimizations
