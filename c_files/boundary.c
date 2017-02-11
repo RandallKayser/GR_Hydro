@@ -6,31 +6,34 @@
 #include <stdio.h>
 
 void bc_periodic(double *Ustate_ptr, double *Pstate_ptr, int dir, int dircellnum, double x0, int cell[3]) {
-	double *Pstate_local;
-	double *Ustate_local;
-	if(cell[dir-1] <= dircellnum / 2 + ghost_num) {
+	double *Pstate_edge;
+	double *Ustate_edge;
+	int plus = 0;
+
+	if(cell[dir-1] < ghost_num) {
 		cell[dir-1] += dircellnum;
+		plus = 1;
 	} else {
 		cell[dir-1] -= dircellnum;
 	}
 	
-	Pstate_local = Pstate_ptr + P_offset(cell, 0);
+	Pstate_edge = Pstate_ptr + P_offset(cell, 0);
 
-	Ustate_local = prim_to_cons_local(Pstate_local, x0, cell);
+	Ustate_edge = prim_to_cons_local(Pstate_edge, x0, cell);
 
-	if(cell[dir-1] < dircellnum / 2 + ghost_num) {
+	if(plus == 0) {
 		cell[dir-1] += dircellnum;
 	} else {
 		cell[dir-1] -= dircellnum;
 	}
 
 	for(int comp = 0; comp < 1 + DIM_NUM; comp++) {
-		*(Ustate_ptr + U_offset(cell, comp)) = Ustate_local[comp];
-		*(Pstate_ptr + P_offset(cell, comp)) = Pstate_local[comp];
+		*(Ustate_ptr + U_offset(cell, comp)) = Ustate_edge[comp];
+		*(Pstate_ptr + P_offset(cell, comp)) = Pstate_edge[comp];
 	}
-	*(Pstate_ptr + P_offset(cell, 5)) = Pstate_local[5];
+	*(Pstate_ptr + P_offset(cell, 5)) = Pstate_edge[5];
 
-	free(Ustate_local);
+	free(Ustate_edge);
 
 }
 
@@ -40,24 +43,31 @@ void bc_fixed_value(double *Ustate_ptr, double *Pstate_ptr, int dir, int dircell
 }
 
 void bc_zero_gradient(double *Ustate_ptr, double *Pstate_ptr, int dir, int dircellnum, double x0, int cell[3]) {
-	double *Pstate_local;
-	double *Ustate_local;
+	double *Pstate_edge;
+	double *Ustate_edge;
 
+	int temp = cell[dir-1];
+	
 	if(cell[dir-1] < dircellnum) {
 		cell[dir-1] = ghost_num;
 	} else {
 		cell[dir-1] = dircellnum + ghost_num - 1;
 	}
 
-	Pstate_local = Pstate_ptr + P_offset(cell, 0);
+	Pstate_edge = Pstate_ptr + P_offset(cell, 0);
 
-	Ustate_local = prim_to_cons_local(Pstate_local, x0, cell);
+	Ustate_edge = prim_to_cons_local(Pstate_edge, x0, cell);
 
-	for(int comp = 0; comp < 1 + DIM_NUM; comp++) {
-		*(Ustate_ptr + U_offset(cell, comp)) = Ustate_local[comp];
+	cell[dir-1] = temp;
+
+	for(int comp = 0; comp < 5; comp++) {
+		*(Ustate_ptr + U_offset(cell, comp)) = Ustate_edge[comp];
+		*(Pstate_ptr + P_offset(cell, comp)) = Pstate_edge[comp];
 	}
 
-	free(Ustate_local);
+	*(Pstate_ptr + P_offset(cell, 5)) = Pstate_edge[5];
+
+	free(Ustate_edge);
 }
 
 
@@ -80,18 +90,23 @@ void enforce_bc(double *Ustate_ptr, double *Pstate_ptr, double x0, int x1type, i
 	}
 
 	for(int i = 0; i < ghost_num; i++) {
+		cell[0] = i;
 		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			cell[1] = j;
 			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
-				cell[0] = i;
-				cell[1] = j;
 				cell[2] = k;
 
 				(*bc)(Ustate_ptr, Pstate_ptr, 1, x1cellnum, x0, cell);
+			}
+		}
 
-				cell[0] = x1cellnum + 2 * ghost_num - (i + 1);
+		cell[0] = x1cellnum + 2 * ghost_num - (i + 1);
+		for(int j = ghost_num; j < x2cellnum + ghost_num; j++) {
+			cell[1] = j;
+			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
+				cell[2] = k;
 
 				(*bc)(Ustate_ptr, Pstate_ptr, 1, x1cellnum, x0, cell);
-
 			}
 		}
 	}
@@ -106,19 +121,24 @@ void enforce_bc(double *Ustate_ptr, double *Pstate_ptr, double x0, int x1type, i
 		bc = bc_reflecting;
 	}
 
-	for(int i = 0; i < ghost_num; i++) {
+	for(int i = 0; i < ghost_num; i++) {	
+		cell[1] = i;
 		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
+			cell[0] = j;
 			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
-				cell[0] = j;
-				cell[1] = i;
 				cell[2] = k;
 
 				(*bc)(Ustate_ptr, Pstate_ptr, 2, x2cellnum, x0, cell);
+			}
+		}
 
-				cell[1] = x2cellnum + 2 * ghost_num - (i + 1);
+		cell[1] = x2cellnum + 2 * ghost_num - (i + 1);
+		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
+			cell[0] = j;
+			for(int k = ghost_num; k < x3cellnum + ghost_num; k++) {
+				cell[2] = k;
 
 				(*bc)(Ustate_ptr, Pstate_ptr, 2, x2cellnum, x0, cell);
-				
 			}
 		}
 	}
@@ -134,17 +154,23 @@ void enforce_bc(double *Ustate_ptr, double *Pstate_ptr, double x0, int x1type, i
 	}
 
 	for(int i = 0; i < ghost_num; i++) {
+		cell[2] = i;
 		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
+			cell[0] = j;
 			for(int k = ghost_num; k < x2cellnum + ghost_num; k++) {
-				cell[0] = j;
 				cell[1] = k;
-				cell[2] = i;
 
-				(*bc)(Ustate_ptr, Pstate_ptr, 3, x3cellnum, x0, cell);
-				
-				cell[2] = x3cellnum + 2 * ghost_num - (i + 1);
+				(*bc)(Ustate_ptr, Pstate_ptr, 3, x3cellnum, x0, cell);		
+			}
+		}
 
-				(*bc)(Ustate_ptr, Pstate_ptr, 3, x3cellnum, x0, cell);
+		cell[2] = x3cellnum + 2*ghost_num - (i + 1);		
+		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
+			cell[0] = j;
+			for(int k = ghost_num; k < x2cellnum + ghost_num; k++) {
+				cell[1] = k;
+
+				(*bc)(Ustate_ptr, Pstate_ptr, 3, x3cellnum, x0, cell);		
 			}
 		}
 	}

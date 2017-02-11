@@ -20,7 +20,7 @@ void timestep_basic(double *Ustate_ptr, double *Pstate_ptr, double dt, double x0
 				source_vect = sources(Pstate_ptr, x0, cell);
 
 				for(int comp = 0; comp < DIM_NUM + 1; comp++) {
-					*(Ustate_ptr + U_offset(cell, comp)) += dt * (flux_vect[comp] + source_vect[comp]);
+					*(Ustate_ptr + U_offset(cell, comp)) += dt * (flux_vect[comp]); //+ source_vect[comp]);
 				}
 
 				enforce_bc(Ustate_ptr, Pstate_ptr, x0, x1type, x2type, x3type);

@@ -11,7 +11,7 @@ double christoffel_symbol(int dir1, int dir2, int dir3, double x0, int cell[DIM_
 // dir1 as top index
 double inverse_metric_full(int dir1, int dir2, double x0, int cell[DIM_NUM-1]);
 double inner_product(double a[DIM_NUM], double b[DIM_NUM], double x0, int cell[DIM_NUM-1]);
-double metric_det(int dir1, int dir2, double x0, int cell[DIM_NUM-1]);
+double metric_det(double x0, int cell[DIM_NUM-1]);
 
 double metric_space(int dir1, int dir2, double x0, int cell[DIM_NUM-1]);
 double inverse_metric_space(int dir1, int dir2, double x0, int cell[DIM_NUM-1]);

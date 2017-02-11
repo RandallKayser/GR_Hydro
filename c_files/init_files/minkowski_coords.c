@@ -90,7 +90,7 @@ double inner_product(double a[DIM_NUM], double b[DIM_NUM], double x0, int cell[D
 }
 
 
-double metric_det(int dir1, int dir2, double x0, int cell[DIM_NUM-1]) {
+double metric_det(double x0, int cell[DIM_NUM-1]) {
 	return -1.;
 }
 
@@ -121,11 +121,10 @@ double log_lapse_derivative(int dir, double x0, int cell[DIM_NUM-1]) {
 
 double *shift(double x0, int cell[DIM_NUM-1]) {
 	double *beta_return;
-	beta_return = malloc(sizeof(double) * 4);
+	beta_return = malloc(sizeof(double) * 3);
 	beta_return[0] = 0.;
 	beta_return[1] = 0.;
 	beta_return[2] = 0.;
-	beta_return[3] = 0.;
 
 	return beta_return;
 }
