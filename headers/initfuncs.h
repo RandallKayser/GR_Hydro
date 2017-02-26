@@ -12,7 +12,4 @@ double u3_0(int cell[DIM_NUM-1]);
 
 void Pinit(double *Pstate_ptr);
 
-double *U_ptr;
-double *P_ptr;
-
 #endif

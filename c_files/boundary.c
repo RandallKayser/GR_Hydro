@@ -164,7 +164,7 @@ void enforce_bc(double *Ustate_ptr, double *Pstate_ptr, double x0, int x1type, i
 			}
 		}
 
-		cell[2] = x3cellnum + 2*ghost_num - (i + 1);		
+		cell[2] = x3cellnum + 2 * ghost_num - (i + 1);		
 		for(int j = ghost_num; j < x1cellnum + ghost_num; j++) {
 			cell[0] = j;
 			for(int k = ghost_num; k < x2cellnum + ghost_num; k++) {

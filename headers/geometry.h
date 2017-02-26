@@ -1,6 +1,5 @@
 #include "constants.h"
 
-double set_boundary_type(int dir);
 double get_position(int dir, double x0, int cell[DIM_NUM-1]);
 double dx_i(int dir, double x0, int cell[DIM_NUM-1]);
 double calculate_dx_min(double x0);
